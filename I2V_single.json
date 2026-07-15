@@ -20,7 +20,7 @@
         0
       ],
       "lora": [
-        "138",
+        "139",
         0
       ],
       "multitalk_model": [
@@ -174,6 +174,22 @@
     "class_type": "WanVideoLoraSelect",
     "_meta": {
       "title": "WanVideo Lora Select"
+    }
+  },
+  "139": {
+    "inputs": {
+      "lora": "wan-nsfw-e14-fixed.safetensors",
+      "strength": 0.5,
+      "low_mem_load": false,
+      "merge_loras": false,
+      "prev_lora": [
+        "138",
+        0
+      ]
+    },
+    "class_type": "WanVideoLoraSelect",
+    "_meta": {
+      "title": "WanVideo Lora Select 2"
     }
   },
   "177": {

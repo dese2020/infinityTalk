@@ -221,6 +221,23 @@ def load_workflow(workflow_path):
         return json.load(file)
 
 
+def load_workflow_from_base64(base64_str):
+    """클라이언트가 전달한 base64 인코딩 워크플로우 JSON을 디코딩하여 dict로 반환"""
+    try:
+        decoded_bytes = base64.b64decode(base64_str)
+        workflow = json.loads(decoded_bytes.decode("utf-8"))
+        logger.info(
+            f"✅ 클라이언트가 전달한 워크플로우를 base64에서 디코딩했습니다 (노드 수: {len(workflow)})"
+        )
+        return workflow
+    except (binascii.Error, ValueError) as e:
+        logger.error(f"❌ 워크플로우 base64 디코딩 실패: {e}")
+        raise Exception(f"워크플로우 base64 디코딩 실패: {e}")
+    except json.JSONDecodeError as e:
+        logger.error(f"❌ 워크플로우 JSON 파싱 실패: {e}")
+        raise Exception(f"워크플로우 JSON 파싱 실패: {e}")
+
+
 def get_workflow_path(input_type, person_count):
     """input_type과 person_count에 따라 적절한 워크플로우 파일 경로를 반환"""
     if input_type == "image":
@@ -281,7 +298,7 @@ def handler(job):
 
     # job_input을 로깅할 때 base64 데이터는 truncate해서 출력
     log_input = job_input.copy()
-    for key in ["image_base64", "video_base64", "wav_base64", "wav_base64_2"]:
+    for key in ["image_base64", "video_base64", "wav_base64", "wav_base64_2", "workflow_base64"]:
         if key in log_input:
             log_input[key] = truncate_base64_for_log(log_input[key])
 
@@ -294,9 +311,15 @@ def handler(job):
 
     logger.info(f"워크플로우 타입: {input_type}, 인물 수: {person_count}")
 
-    # 워크플로우 파일 경로 결정
-    workflow_path = get_workflow_path(input_type, person_count)
-    logger.info(f"사용할 워크플로우: {workflow_path}")
+    # 워크플로우 결정: 클라이언트가 workflow_base64를 보낸 경우 이를 사용하고,
+    # 그렇지 않으면 도커 이미지에 포함된 기본 워크플로우 파일을 사용
+    client_workflow_b64 = job_input.get("workflow_base64")
+    if client_workflow_b64:
+        workflow_path = "client_provided_base64"
+        logger.info("클라이언트가 제공한 워크플로우(base64)를 사용합니다.")
+    else:
+        workflow_path = get_workflow_path(input_type, person_count)
+        logger.info(f"사용할 기본 워크플로우: {workflow_path}")
 
     # 이미지/비디오 입력 처리
     media_path = None
@@ -402,7 +425,10 @@ def handler(job):
     if person_count == "multi":
         logger.info(f"두 번째 오디오 경로: {wav_path_2}")
 
-    prompt = load_workflow(workflow_path)
+    if client_workflow_b64:
+        prompt = load_workflow_from_base64(client_workflow_b64)
+    else:
+        prompt = load_workflow(workflow_path)
 
     # ------------------------------------------------------------------
     # 동적 Force Offload 설정
@@ -454,20 +480,29 @@ def handler(job):
         logger.info(f"두 번째 오디오 파일 크기: {os.path.getsize(wav_path_2)} bytes")
 
     # 워크플로우 노드 설정
-    if input_type == "image":
-        # I2V 워크플로우: 이미지 입력 설정
-        prompt["284"]["inputs"]["image"] = media_path
-    else:
-        # V2V 워크플로우: 비디오 입력 설정
-        prompt["228"]["inputs"]["video"] = media_path
+    try:
+        if input_type == "image":
+            # I2V 워크플로우: 이미지 입력 설정
+            prompt["284"]["inputs"]["image"] = media_path
+        else:
+            # V2V 워크플로우: 비디오 입력 설정
+            prompt["228"]["inputs"]["video"] = media_path
 
-    # 공통 설정
-    prompt["125"]["inputs"]["audio"] = wav_path
-    prompt["241"]["inputs"]["positive_prompt"] = prompt_text
-    prompt["245"]["inputs"]["value"] = width
-    prompt["246"]["inputs"]["value"] = height
+        # 공통 설정
+        prompt["125"]["inputs"]["audio"] = wav_path
+        prompt["241"]["inputs"]["positive_prompt"] = prompt_text
+        prompt["245"]["inputs"]["value"] = width
+        prompt["246"]["inputs"]["value"] = height
 
-    prompt["270"]["inputs"]["value"] = max_frame
+        prompt["270"]["inputs"]["value"] = max_frame
+    except KeyError as e:
+        logger.error(f"❌ 워크플로우에 필요한 노드 ID가 없습니다: {e}")
+        return {
+            "error": (
+                f"제공된 워크플로우에 필요한 노드({e})가 없습니다. "
+                "커스텀 워크플로우는 기본 템플릿과 동일한 노드 ID 구조를 사용해야 합니다."
+            )
+        }
 
     # 다중 인물용 두 번째 오디오 설정
     if person_count == "multi":

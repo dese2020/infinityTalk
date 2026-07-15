@@ -47,19 +47,25 @@ RUN cd /ComfyUI/custom_nodes && \
     pip install -r requirements.txt
 
 
-# RUN wget -q https://huggingface.co/Kijai/WanVideo_comfy_GGUF/resolve/main/InfiniteTalk/Wan2_1-InfiniteTalk_Single_Q8.gguf -O /ComfyUI/models/diffusion_models/Wan2_1-InfiniteTalk_Single_Q8.gguf
-# RUN wget -q https://huggingface.co/Kijai/WanVideo_comfy_GGUF/resolve/main/InfiniteTalk/Wan2_1-InfiniteTalk_Multi_Q8.gguf -O /ComfyUI/models/diffusion_models/Wan2_1-InfiniteTalk_Multi_Q8.gguf
-# RUN wget -q https://huggingface.co/city96/Wan2.1-I2V-14B-480P-gguf/resolve/main/wan2.1-i2v-14b-480p-Q8_0.gguf -O /ComfyUI/models/diffusion_models/wan2.1-i2v-14b-480p-Q8_0.gguf
+# Descargas via huggingface_hub (hf_transfer acelera la descarga) WanVideo_comfy_fp8_scaled Wan2_1-InfiniteTalk-Single_fp8_e4m3fn_scaled_KJ.safetensors
+# --local-dir-use-symlinks False copia el archivo real en destino (no symlink al cache), Wan2_1-InfiniteTalk-Multi_fp8_e4m3fn_scaled_KJ.safetensors
+# y al final borramos el cache de HF para que no quede duplicado dentro de la imagen.
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
-RUN wget -q https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/InfiniteTalk/Wan2_1-InfiniteTalk-Single_fp8_e4m3fn_scaled_KJ.safetensors -O /ComfyUI/models/diffusion_models/Wan2_1-InfiniteTalk-Single_fp8_e4m3fn_scaled_KJ.safetensors
-RUN wget -q https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/InfiniteTalk/Wan2_1-InfiniteTalk-Multi_fp8_e4m3fn_scaled_KJ.safetensors -O /ComfyUI/models/diffusion_models/Wan2_1-InfiniteTalk-Multi_fp8_e4m3fn_scaled_KJ.safetensors
-RUN wget -q https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan2_1-I2V-14B-480P_fp8_e4m3fn.safetensors -O /ComfyUI/models/diffusion_models/Wan2_1-I2V-14B-480P_fp8_e4m3fn.safetensors
+# RUN huggingface-cli download Kijai/WanVideo_comfy_GGUF InfiniteTalk/Wan2_1-InfiniteTalk_Single_Q8.gguf --local-dir /ComfyUI/models/diffusion_models --local-dir-use-symlinks False
+# RUN huggingface-cli download Kijai/WanVideo_comfy_GGUF InfiniteTalk/Wan2_1-InfiniteTalk_Multi_Q8.gguf --local-dir /ComfyUI/models/diffusion_models --local-dir-use-symlinks False
+# RUN huggingface-cli download city96/Wan2.1-I2V-14B-480P-gguf wan2.1-i2v-14b-480p-Q8_0.gguf --local-dir /ComfyUI/models/diffusion_models --local-dir-use-symlinks False
 
-RUN wget -q https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors -O /ComfyUI/models/loras/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors
-RUN wget -q https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Wan2_1_VAE_bf16.safetensors -O /ComfyUI/models/vae/Wan2_1_VAE_bf16.safetensors    
-RUN wget -q https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/umt5-xxl-enc-fp8_e4m3fn.safetensors -O /ComfyUI/models/text_encoders/umt5-xxl-enc-fp8_e4m3fn.safetensors
-RUN wget -q https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors -O /ComfyUI/models/clip_vision/clip_vision_h.safetensors
-RUN wget -q https://huggingface.co/Kijai/MelBandRoFormer_comfy/resolve/main/MelBandRoformer_fp16.safetensors -O /ComfyUI/models/diffusion_models/MelBandRoformer_fp16.safetensors
+RUN huggingface-cli download Kijai/WanVideo_comfy_fp8_scaled InfiniteTalk/Wan2_1-InfiniteTalk-Single_fp8_e4m3fn_scaled_KJ.safetensors --local-dir /ComfyUI/models/diffusion_models --local-dir-use-symlinks False && \
+    huggingface-cli download Kijai/WanVideo_comfy_fp8_scaled InfiniteTalk/Wan2_1-InfiniteTalk-Multi_fp8_e4m3fn_scaled_KJ.safetensors --local-dir /ComfyUI/models/diffusion_models --local-dir-use-symlinks False && \
+    huggingface-cli download Kijai/WanVideo_comfy Wan2_1-I2V-14B-480P_fp8_e4m3fn.safetensors --local-dir /ComfyUI/models/diffusion_models --local-dir-use-symlinks False && \
+    huggingface-cli download Kijai/WanVideo_comfy Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors --local-dir /ComfyUI/models/loras --local-dir-use-symlinks False && \
+    huggingface-cli download hijdese2020/wan21_data generalnsfw/wan-nsfw-e14-fixed.safetensors --local-dir /ComfyUI/models/loras --local-dir-use-symlinks False && \
+    huggingface-cli download Kijai/WanVideo_comfy Wan2_1_VAE_bf16.safetensors --local-dir /ComfyUI/models/vae --local-dir-use-symlinks False && \
+    huggingface-cli download Kijai/WanVideo_comfy umt5-xxl-enc-fp8_e4m3fn.safetensors --local-dir /ComfyUI/models/text_encoders --local-dir-use-symlinks False && \
+    huggingface-cli download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/clip_vision/clip_vision_h.safetensors --local-dir /ComfyUI/models/clip_vision --local-dir-use-symlinks False && \
+    huggingface-cli download Kijai/MelBandRoFormer_comfy MelBandRoformer_fp16.safetensors --local-dir /ComfyUI/models/diffusion_models --local-dir-use-symlinks False && \
+    rm -rf /root/.cache/huggingface
 
 
 COPY . .
