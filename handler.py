@@ -29,6 +29,26 @@ def truncate_base64_for_log(base64_str, max_length=50):
 server_address = os.getenv("SERVER_ADDRESS", "127.0.0.1")
 client_id = str(uuid.uuid4())
 
+# ComfyUI solo permite que LoadImage/LoadAudio referencien archivos dentro de
+# su propio directorio "input" (validación de seguridad). Por eso ya no basta
+# con guardar los temporales en cualquier ruta absoluta: hay que guardarlos
+# DENTRO de este directorio y pasarle a los nodos la ruta relativa a él.
+COMFYUI_INPUT_DIR = os.getenv("COMFYUI_INPUT_DIR", "/ComfyUI/input")
+
+
+def to_comfyui_relative(path):
+    """Convierte una ruta absoluta dentro de COMFYUI_INPUT_DIR a la ruta
+    relativa que espera el campo 'image'/'audio'/'video' de un nodo.
+    Si la ruta no está dentro de COMFYUI_INPUT_DIR (ej. viene de image_path
+    con una ruta externa), se devuelve tal cual, sin modificar."""
+    try:
+        rel = os.path.relpath(path, COMFYUI_INPUT_DIR)
+        if not rel.startswith(".."):
+            return rel
+    except Exception:
+        pass
+    return path
+
 
 def download_file_from_url(url, output_path):
     """URL에서 파일을 다운로드하는 함수"""
@@ -78,17 +98,24 @@ def save_base64_to_file(base64_data, temp_dir, output_filename):
         raise Exception(f"Base64 디코딩 실패: {e}")
 
 
-def process_input(input_data, temp_dir, output_filename, input_type):
-    """입력 데이터를 처리하여 파일 경로를 반환하는 함수"""
+def process_input(input_data, task_id, output_filename, input_type):
+    """입력 데이터를 처리하여 파일 경로를 반환하는 함수
+
+    url/base64인 경우 반드시 ComfyUI의 input 디렉토리 안에 저장한다.
+    (ComfyUI가 input 디렉토리 밖의 경로는 보안상 거부하기 때문)
+    """
     if input_type == "path":
-        # 경로인 경우 그대로 반환
+        # 경로인 경우 그대로 반환 (호출자가 이미 유효한 경로를 준다고 가정)
         logger.info(f"📁 경로 입력 처리: {input_data}")
         return input_data
-    elif input_type == "url":
+
+    temp_dir = os.path.join(COMFYUI_INPUT_DIR, task_id)
+
+    if input_type == "url":
         # URL인 경우 다운로드
         logger.info(f"🌐 URL 입력 처리: {input_data}")
         os.makedirs(temp_dir, exist_ok=True)
-        file_path = os.path.abspath(os.path.join(temp_dir, output_filename))
+        file_path = os.path.join(temp_dir, output_filename)
         return download_file_from_url(input_data, file_path)
     elif input_type == "base64":
         # Base64인 경우 디코딩하여 저장
@@ -482,14 +509,14 @@ def handler(job):
     # 워크플로우 노드 설정
     try:
         if input_type == "image":
-            # I2V 워크플로우: 이미지 입력 설정
-            prompt["284"]["inputs"]["image"] = media_path
+            # I2V 워크플로우: 이미지 입력 설정 (ComfyUI input 디렉토리 기준 상대경로)
+            prompt["284"]["inputs"]["image"] = to_comfyui_relative(media_path)
         else:
             # V2V 워크플로우: 비디오 입력 설정
-            prompt["228"]["inputs"]["video"] = media_path
+            prompt["228"]["inputs"]["video"] = to_comfyui_relative(media_path)
 
         # 공통 설정
-        prompt["125"]["inputs"]["audio"] = wav_path
+        prompt["125"]["inputs"]["audio"] = to_comfyui_relative(wav_path)
         prompt["241"]["inputs"]["positive_prompt"] = prompt_text
         prompt["245"]["inputs"]["value"] = width
         prompt["246"]["inputs"]["value"] = height
@@ -509,10 +536,10 @@ def handler(job):
         # 워크플로우 타입에 따라 두 번째 오디오 노드 설정
         if input_type == "image":  # I2V_multi.json의 경우
             if "307" in prompt:
-                prompt["307"]["inputs"]["audio"] = wav_path_2
+                prompt["307"]["inputs"]["audio"] = to_comfyui_relative(wav_path_2)
         else:  # V2V_multi.json의 경우
             if "313" in prompt:
-                prompt["313"]["inputs"]["audio"] = wav_path_2
+                prompt["313"]["inputs"]["audio"] = to_comfyui_relative(wav_path_2)
 
     ws_url = f"ws://{server_address}:8188/ws?clientId={client_id}"
     logger.info(f"Connecting to WebSocket: {ws_url}")

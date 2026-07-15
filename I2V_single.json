@@ -1,7 +1,7 @@
 {
   "120": {
     "inputs": {
-      "model": "Wan2_1-InfiniteTalk-Single_fp8_e4m3fn_scaled_KJ.safetensors"
+      "model": "InfiniteTalk/Wan2_1-InfiniteTalk-Single_fp8_e4m3fn_scaled_KJ.safetensors"
     },
     "class_type": "MultiTalkModelLoader",
     "_meta": {
@@ -166,7 +166,7 @@
   },
   "138": {
     "inputs": {
-      "lora": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+      "lora": "Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
       "strength": 1,
       "low_mem_load": false,
       "merge_loras": false
@@ -291,7 +291,7 @@
   },
   "238": {
     "inputs": {
-      "clip_name": "clip_vision_h.safetensors"
+      "clip_name": "split_files/clip_vision/clip_vision_h.safetensors"
     },
     "class_type": "CLIPVisionLoader",
     "_meta": {
