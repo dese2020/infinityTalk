@@ -178,7 +178,7 @@
   },
   "139": {
     "inputs": {
-      "lora": "wan-nsfw-e14-fixed.safetensors",
+      "lora": "generalnsfw/wan-nsfw-e14-fixed.safetensors",
       "strength": 0.5,
       "low_mem_load": false,
       "merge_loras": false,
