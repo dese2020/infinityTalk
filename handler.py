@@ -383,9 +383,9 @@ def handler(job):
                 job_input["video_base64"], task_id, "input_video.mp4", "base64"
             )
         else:
-            # 기본값 사용 (비디오가 없는 경우 기본 이미지 사용)
-            media_path = "/examples/image.jpg"
-            logger.info("기본 이미지 파일을 사용합니다: /examples/image.jpg")
+            # 기본값 사용 (V2V이므로 반드시 비디오 파일이어야 함)
+            media_path = "/examples/video.mp4"
+            logger.info("기본 비디오 파일을 사용합니다: /examples/video.mp4")
 
     # 오디오 입력 처리 (wav_path, wav_url, wav_base64 중 하나만 사용)
     wav_path = None
