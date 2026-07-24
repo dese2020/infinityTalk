@@ -65,7 +65,7 @@ RUN hf download Kijai/WanVideo_comfy_fp8_scaled InfiniteTalk/Wan2_1-InfiniteTalk
     hf download Kijai/WanVideo_comfy umt5-xxl-enc-fp8_e4m3fn.safetensors --local-dir /ComfyUI/models/text_encoders  && \
     hf download Comfy-Org/Wan_2.1_ComfyUI_repackaged split_files/clip_vision/clip_vision_h.safetensors --local-dir /ComfyUI/models/clip_vision  && \
     hf download Kijai/MelBandRoFormer_comfy MelBandRoformer_fp16.safetensors --local-dir /ComfyUI/models/diffusion_models  && \
-    hf download Kijai/wav2vec2_safetensors wav2vec2-chinese-base_fp16.safetensors --local-dir /ComfyUI/models/transformers  && \
+    hf download Kijai/wav2vec2_safetensors wav2vec2-chinese-base_fp16.safetensors --local-dir /ComfyUI/models/wav2vec2  && \
     rm -rf /root/.cache/huggingface
 
 
